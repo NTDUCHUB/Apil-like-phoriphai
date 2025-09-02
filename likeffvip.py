@@ -1,73 +1,61 @@
 import requests
-import json
-import threading
 
-# Hàm thực hiện yêu cầu API cho mỗi ID
-def like_tool(api_url, key, uid, region):
-    # Thiết lập các tham số cần thiết
-    params = {
-        "key": key,
-        "uid": uid,
-        "region": region
-    }
-
+def get_like_data(api_url, key, uid, region):
+    # Tạo URL yêu cầu
+    url = f"{api_url}/like?key={key}&uid={uid}&region={region}"
+    
     try:
         # Gửi yêu cầu GET đến API
-        response = requests.get(api_url, params=params)
-
-        # Kiểm tra mã trạng thái HTTP của phản hồi
+        response = requests.get(url)
+        
+        # Kiểm tra xem yêu cầu có thành công không
         if response.status_code == 200:
-            # Lấy dữ liệu JSON từ phản hồi
+            # Chuyển dữ liệu trả về từ JSON thành dictionary
             data = response.json()
-
-            # Kiểm tra trạng thái thành công
-            if data.get("status") == 1:
-                print(f"ID {uid} - Gọi API thành công!")
-                print(f"Nickname của người chơi: {data['PlayerNickname']}")
-                print(f"Likes trước khi thực hiện lệnh: {data['LikesbeforeCommand']}")
-                print(f"Likes sau khi thực hiện lệnh: {data['LikesafterCommand']}")
-                print(f"Cấp độ người chơi: {data['Level']}")
-                print(f"Khu vực: {data['Region']}")
-                print(f"UID người chơi: {data['UID']}")
-            else:
-                print(f"ID {uid} - API trả về lỗi: Không thể tăng likes.")
+            
+            # Trả về dữ liệu cần thiết
+            return {
+                "Likes Given By API": data.get("LikesGivenByAPI"),
+                "Likes After Command": data.get("LikesafterCommand"),
+                "Likes Before Command": data.get("LikesbeforeCommand"),
+                "Player Nickname": data.get("PlayerNickname"),
+                "Level": data.get("Level"),
+                "Region": data.get("Region"),
+                "UID": data.get("UID"),
+                "Status": data.get("status")
+            }
         else:
-            print(f"ID {uid} - Lỗi khi gọi API. Mã lỗi HTTP: {response.status_code}")
-
+            print(f"Lỗi: {response.status_code}")
+            return None
     except Exception as e:
-        print(f"ID {uid} - Đã xảy ra lỗi: {e}")
+        print(f"Lỗi: {e}")
+        return None
 
-# Hàm để gọi nhiều luồng xử lý các ID
-def handle_multiple_ids(api_url, key, region, uid_list):
-    threads = []
-
-    # Duyệt qua danh sách UID và tạo các luồng
-    for uid in uid_list:
-        thread = threading.Thread(target=like_tool, args=(api_url, key, uid, region))
-        threads.append(thread)
-        thread.start()  # Bắt đầu luồng mới
-
-    # Chờ tất cả các luồng hoàn thành
-    for thread in threads:
-        thread.join()
-
-# Chạy công cụ với nhiều ID
-if __name__ == "__main__":
-    # URL của API
-    api_url = "http://103.149.253.241:2010/like"
-    
-    # Các tham số cần thiết
-    key = "conbo"  # Khoá API
-    region = "sg"  # Khu vực người chơi
-
-    # Hiển thị thông báo đáng yêu
+def main():
+    print("Chào mừng đến với Bot Tăng Like Cute!")
     print("Nhập ID Game Phờ Ri Phai Của Mày Vào Đây Cho Bot Cute Này Tăng Like Cho Hiểu Chưa Đồ Đáng Iu Kia")
     
-    # Nhập các UID từ bàn phím
-    uid_list_input = input("Nhập danh sách UID, cách nhau bằng dấu phẩy: ")
-    
-    # Chuyển chuỗi nhập vào thành danh sách các UID
-    uid_list = [int(uid.strip()) for uid in uid_list_input.split(',')]
+    # Nhập ID game và các thông tin cần thiết
+    uid = input("Nhập ID game của bạn: ")
+    region = input("Nhập khu vực của bạn (ví dụ: sg, vn): ").strip().lower()
 
-    # Gọi hàm xử lý với danh sách UID
-    handle_multiple_ids(api_url, key, region, uid_list)
+    # Cấu hình các tham số API
+    api_url = "http://103.149.253.241:2010"
+    key = "conbo"
+
+    try:
+        # Gọi hàm và lấy kết quả
+        result = get_like_data(api_url, key, int(uid), region)
+        
+        # Hiển thị kết quả nếu có
+        if result:
+            print("\nThông tin từ API:")
+            for key, value in result.items():
+                print(f"{key}: {value}")
+        else:
+            print("Không nhận được dữ liệu từ API. Vui lòng thử lại.")
+    except ValueError:
+        print("ID game phải là một số hợp lệ. Vui lòng nhập lại.")
+    
+if __name__ == "__main__":
+    main()
